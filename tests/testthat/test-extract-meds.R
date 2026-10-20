@@ -3,6 +3,9 @@ library(tidyr)
 library(testthat)
 source("R/extract-meds.R")
 
+# Needed to load the data for testing in GitHub.
+source(testthat::test_path("../../R/extract-meds.R"))
+
 wide_fixture <- read_csv("data/test-fixtures/meds_wide_fixture.csv", col_types = cols(.default = col_character()))
 
 test_that("one row per filled slot", {
