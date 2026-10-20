@@ -18,7 +18,7 @@ test_that("values stay with the right patient and slot", {
   out <- extract_meds(wide_fixture)
   expect_equal(out$medication_name[out$patient_id == "P3"], "lisinopril 10 mg")
   p1 <- out$medication_name[out$patient_id == "P1"]
-expected_p1 <- c("metfomin 500 mg", "amlodipine 5 mg")
+expected_p1 <- c("metformin 500 mg", "amlodipine 5 mg")
 expect_equal(sort(p1), sort(expected_p1),
              info = paste("P1 got:", toString(p1)))
 })
