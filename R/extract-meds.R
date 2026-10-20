@@ -1,8 +1,5 @@
 
 #Load the data
-source("R/load-data.R")
-wide <- load_data()
-
 extract_meds <- function(wide) {
     #Pull out meds
     meds_wide <- wide %>%
@@ -30,4 +27,9 @@ extract_meds <- function(wide) {
     # Add ID
     meds_long <- meds_long %>%
     mutate(medication_id = row_number())
+
+    # Move Medication ID first then patient_id
+    meds_long <- meds_long %>%
+    relocate(medication_id, patient_id)
 }
+
