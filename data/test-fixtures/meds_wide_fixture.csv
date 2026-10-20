@@ -1,0 +1,4 @@
+patient_id,medication__1__rxnorm_code,medication__1__name,medication__1__sig,medication__1__start_date,medication__1__status,medication__2__rxnorm_code,medication__2__name,medication__2__sig,medication__2__start_date,medication__2__status
+P1,861007,metformin 500 mg,1 tab BID,2020-01-01,Active,197361,amlodipine 5 mg,1 tab daily,2021-02-02,Active
+P2,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+P3,314076,lisinopril 10 mg,1 tab daily,2019-05-05,Active,NA,NA,NA,NA,NA
