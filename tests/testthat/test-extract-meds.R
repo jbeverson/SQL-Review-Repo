@@ -1,13 +1,15 @@
 library(dplyr)
 library(tidyr)
+library(readr)
 library(testthat)
-source("R/extract-meds.R")
 
-# Needed to load the data for testing in GitHub.
+# Needed to load the function for testing in GitHub.
 source(testthat::test_path("../../R/extract-meds.R"))
 
-wide_fixture <- read_csv("data/test-fixtures/meds_wide_fixture.csv", col_types = cols(.default = col_character()))
-
+wide_fixture <- read_csv(
+  test_path("../../data/test-fixtures/meds_wide_fixture.csv"),
+  col_types = cols(.default = col_character())
+)
 test_that("one row per filled slot", {
   expect_equal(nrow(extract_meds(wide_fixture)), 3)
 })
