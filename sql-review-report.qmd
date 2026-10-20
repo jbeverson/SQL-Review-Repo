@@ -1,0 +1,15 @@
+---
+title: "SQL Review Report"
+format: html
+---
+
+```{r}
+library(tidyverse)
+source("R/load-data.R")
+source("R/extract-meds.R")
+source("R/extract-patient.R")
+
+wide <- load_data()
+extract_meds(wide)
+extract_patient(wide)
+```
