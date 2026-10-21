@@ -38,9 +38,10 @@ dbExecute(con, "
 CREATE TABLE problems (
   problem_id INT PRIMARY KEY,
   patient_id VARCHAR(10) NOT NULL,
+  problem_slot INT,
   snomed_code VARCHAR(20) NOT NULL,
-  problem_display VARCHAR(150),
-  onset_date DATE,
+  problem_name VARCHAR(150),
+  problem_onset_date DATE,
   problem_status VARCHAR(20),
   FOREIGN KEY (patient_id) REFERENCES patients (patient_id)
 ) ENGINE = InnoDB")
@@ -61,22 +62,20 @@ CREATE TABLE medications (
 dbExecute(con, "
 CREATE TABLE labs (
   lab_id INT PRIMARY KEY,
+  lab_slot INT,
   patient_id VARCHAR(10) NOT NULL,
   loinc_code VARCHAR(20) NOT NULL,
   lab_name VARCHAR(150),
-  result_value DECIMAL(10,2),
-  result_unit VARCHAR(20),
+  lab_value DECIMAL(10,2),
+  unit VARCHAR(20),
   ref_low DECIMAL(10,2),
   ref_high DECIMAL(10,2),
-  result_flag CHAR(1),
-  result_date DATE,
+  flag CHAR(1),
+  lab_date DATE,
   FOREIGN KEY (patient_id) REFERENCES patients (patient_id)
 ) ENGINE = InnoDB")
 
-
-
-
 dbAppendTable(con, "patients",    patients)
-dbAppendTable(con, "medications", meds_long)
-#dbAppendTable(con, "problems",    problems_long)
-#dbAppendTable(con, "labs",        labs_long)
+dbAppendTable(con, "medications", meds)
+dbAppendTable(con, "problems",    problems)
+dbAppendTable(con, "labs",        labs)

@@ -8,8 +8,13 @@ library(tidyverse)
 source("R/load-data.R")
 source("R/extract-meds.R")
 source("R/extract-patient.R")
+source("R/extract-problems.R")
+source("R/extract-labs.R")
 
 wide <- load_data()
-meds_long<-extract_meds(wide)
+meds<-extract_meds(wide)
 patients <- extract_patient(wide)
+problems <- extract_problems(wide)
+labs <- extract_labs(wide)
+
 ```
