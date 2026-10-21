@@ -18,8 +18,11 @@ extract_patient <- function(wide) {
     )
 
     # Check NA by birth
-    # sum(is.na(patient$date_of_birth))
+    sum(is.na(patient$date_of_birth))
     
     # Check for duplicates - when ran
     stopifnot("patient_id must be unique" = !anyDuplicated(patient$patient_id), !anyNA(patient$patient_id))
+
+    # Function returns last valu.
+    patient
 }
