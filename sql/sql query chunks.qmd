@@ -1,0 +1,90 @@
+---
+title: "sql query run through"
+format: html
+---
+
+```{r}
+#| label: setup
+library(DBI)
+library(RMariaDB)
+```
+
+
+Let's first just pull all of the patients and a few things about them. SELECT indicates the columns you want. From indicates the table you want. The database and connection you are pulling from are embedded in con.
+
+This gives you a patient data frame.
+
+```{r}
+patients_df <- dbGetQuery(con, "
+  SELECT patient_id, first_name, last_name, date_of_birth
+  FROM patients;
+  ")
+
+# Check number of rows returned and distinct patients. They should match.
+tibble::tibble(
+  rows              = nrow(patients_df),
+  distinct_patients = n_distinct(patients_df$patient_id)
+)
+```
+
+This works fine here but often you'll want to just pick the first few rows of a very large table. In Maria you do that with LIMIT 5 at the end. 
+
+Now let's add ORDER BY date_of_birth and you'll see we get the 5 oldest patients. I could also filter to just these patients using WHERE date_of_birth<'1980_01_01'
+```{r}
+patients_df <- dbGetQuery(con, "
+  SELECT patient_id, first_name, last_name, date_of_birth
+  FROM patients
+  ORDER BY date_of_birth
+  LIMIT 5;
+  ")
+
+patients_df
+```
+
+Now let's take a first look at labs. I know this isn't a very wide table so I'll just grab everything. Then I'll add DISTINCT after SELECT to get just the unique or distinct rows in terms of the variables I enter. Now these should be the same.
+```{r}
+labs_df <- dbGetQuery(con, "
+  SELECT DISTINCT loinc_code, lab_name
+  FROM labs;
+  ")
+
+# Check number of rows returned and distinct labs. They should be different.
+tibble::tibble(
+  rows              = nrow(labs_df),
+  distinct_patients = n_distinct(labs_df$loinc_code)
+)
+```
+
+If I instead wanted to know how many of each lab appear in the data, I would use GROUP BY. And I could report this as a ggplot. 
+```{r}
+labs_df <- dbGetQuery(con, "
+  SELECT loinc_code,
+  COUNT(*) AS row_count
+  FROM labs;
+  GROUP BY loinc_code
+  ")
+
+labs_df
+
+ggplot(labs_df, aes(x = row_count, y = reorder(loinc_code, row_count))) + 
+geom_col()
+```
+
+Now let's talk about joins. First let's say we wanted to ask how many labs each patient has: 0,1,2,3 labs. So we select patient_id, we count the number of labs. Let's first look at the number of rows and distinct patients we got back. 93. Remember we were looking at 100 before. Any guess what went wrong?
+```{r}
+pt_lab_count <- dbGetQuery(con, 
+    "SELECT patient_id, COUNT(*) AS n_labs
+    FROM labs
+    GROUP BY patient_id
+    ORDER BY n_labs DESC, patient_id;
+    ")
+
+# Check number of rows returned and distinct labs. They should be different.
+tibble::tibble(
+  rows              = nrow(pt_lab_count$patient_id),
+  distinct_patients = n_distinct(pt_lab_count$patient_id)
+)
+
+```
+
+```{r}
