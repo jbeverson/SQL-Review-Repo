@@ -9,6 +9,17 @@ library(DBI)
 library(RMariaDB)
 ```
 
+``` {r}
+#| label: connection
+
+con <- dbConnect(
+  RMariaDB::MariaDB(),
+  host     = "hank.test",
+  user     = "root",
+  bigint   = "integer"        # COUNT(*) comes back as integer, not integer64
+)
+
+```
 
 Let's first just pull all of the patients and a few things about them. SELECT indicates the columns you want. From indicates the table you want. The database and connection you are pulling from are embedded in con.
 
@@ -16,175 +27,13 @@ This gives you a patient data frame.
 
 ```{r}
 patients_df <- dbGetQuery(con, "
-  SELECT patient_id, first_name, last_name, date_of_birth
+  SELECT *
   FROM patients;
   ")
 
 # Check number of rows returned and distinct patients. They should match.
-tibble::tibble(
+tibble(
   rows              = nrow(patients_df),
   distinct_patients = n_distinct(patients_df$patient_id)
-)
-```
-
-This works fine here but often you'll want to just pick the first few rows of a very large table. In Maria you do that with LIMIT 5 at the end. 
-
-Now let's add ORDER BY date_of_birth and you'll see we get the 5 oldest patients. I could also filter to just these patients using WHERE date_of_birth<'1980_01_01'
-```{r}
-patients_df <- dbGetQuery(con, "
-  SELECT patient_id, first_name, last_name, date_of_birth
-  FROM patients
-  ORDER BY date_of_birth
-  LIMIT 5;
-  ")
-
-patients_df
-```
-
-Now let's take a first look at labs. I know this isn't a very wide table so I'll just grab everything. Then I'll add DISTINCT after SELECT to get just the unique or distinct rows in terms of the variables I enter. Now these should be the same.
-```{r}
-labs_df <- dbGetQuery(con, "
-  SELECT loinc_code, lab_name
-  FROM labs;
-  ")
-
-# Check number of rows returned and distinct labs. They should be different.
-tibble(
-  rows              = nrow(labs_df),
-  distinct_labs = n_distinct(labs_df$loinc_code)
-)
-```
-
-If I instead wanted to know how many of each lab appear in the data, I would use GROUP BY. And I could report this as a ggplot. 
-```{r}
-labs_df <- dbGetQuery(con, "
-  SELECT loinc_code,
-  COUNT(*) AS row_count
-  FROM labs
-  GROUP BY loinc_code;
-  ")
-
-labs_df
-
-ggplot(labs_df, aes(x = row_count, y = reorder(loinc_code, row_count))) + 
-geom_col()
-```
-
-Now let's talk about joins. First let's say we wanted to ask how many labs each patient has: 0,1,2,3 labs. So we select patient_id, we count the number of labs. use COUNT(*) AS to create a new variable counting the number of labs. Let's first look at the number of rows and distinct patients we got back. 93. Let's look at the count too in a simple table. Remember we were looking at 100 before. Any guess what went wrong?
-```{r}
-pt_lab_count <- dbGetQuery(con, 
-    "SELECT patient_id, COUNT(*) AS n_labs
-    FROM labs
-    GROUP BY patient_id
-    ORDER BY n_labs DESC, patient_id;
-    ")
-
-# Check number of rows returned and distinct labs. They should be different.
-tibble(
-  rows              = nrow(pt_lab_count),
-  distinct_patients = n_distinct(pt_lab_count$patient_id)
-)
-
-table(pt_lab_count$n_labs)
-```
-
-Let's join to bring in the patients with zero.
-
-So we select p.patient_id from patients as p. Let's check the number of rows and patients. Good back to 100.
-Now let's LEFT JOIN that to labs as l ON p.patieint_id = l.patient_id.
-Now we have more rows but still 100 patients. Why?
-Okay let's get back to a count so we do COUNT(*) AS n_labs and GROUP BY p.patient_id. Now we are back to 100 rows and patients because we are counting patients that don't appear in labs. Now let's see if we fixed our counts.
-What's wrong here? Our COUNT is everything so it is including rows from patients that didn't match. To fix that, let's put something that's in labs only. And run again. Okay now this looks good.
-```{r}
-pt_lab_count_improved <-dbGetQuery(con,
-"SELECT p.patient_id, COUNT(l.loinc_code) AS n_labs
-FROM patients as p
-LEFT JOIN labs l ON p.patient_id = l.patient_id
-GROUP BY p.patient_id
-ORDER BY n_labs DESC, patient_id;
-")
-
-tibble(
-  rows              = nrow(pt_lab_count_improved),
-  distinct_patients = n_distinct(pt_lab_count_improved$patient_id)
-)
-
-table(pt_lab_count_improved$n_labs)
-```
-
-Now let's look at the different types of joins by joining patients to problems.
-Why does the number of rows increase to 303 on LEFT JOIN?
-Why do we lose 12 rows and 12 patients shifting to INNER JOIN.
-Why is INNER JOIN and RIGHT JOIN the same here?
-
-```{r}
-pt_problems<-dbGetQuery(con,"
-SELECT p.patient_id, pr.problem_name
-FROM patients as p
-RIGHT JOIN problems pr ON p.patient_id = pr.patient_id 
-")
-
-tibble(
-  rows              = nrow(pt_problems),
-  distinct_patients = n_distinct(pt_problems$patient_id)
-)
-```
-
-
-Now let's focus on filtering. WHERE pr.problem_name='Osteoarthritis (disorder)' That gives us 19 rows and 19 patients. Let's switch it to AND within the join. That gives 100 rows and 100 patients - including those without Osteoarthritis.
-```{r}
-pt_problems<-dbGetQuery(con,"
-SELECT p.patient_id, pr.problem_name
-FROM patients as p
-LEFT JOIN problems pr ON p.patient_id = pr.patient_id 
-WHERE pr.problem_name='Osteoarthritis (disorder)'
-")
-
-tibble(
-  rows              = nrow(pt_problems),
-  distinct_patients = n_distinct(pt_problems$patient_id)
-)
-```
-
-
-```{r}
-pt_problems<-dbGetQuery(con,"
-SELECT p.patient_id, pr.problem_name
-FROM patients as p
-LEFT JOIN problems pr ON p.patient_id = pr.patient_id 
-WHERE pr.problem_name='Osteoarthritis (disorder)'
-")
-
-tibble(
-  rows              = nrow(pt_problems),
-  distinct_patients = n_distinct(pt_problems$patient_id)
-)
-```
-
-Now let's look at common table expressions (CTE). This is a little advanced but worth learning to structure long queries.
-So let's say I'm really happy with the output of my query above but I want to find labs for these patients. One way to do this is with a CTE. So first thing I do is wrap my query in WITH oseoarthritis AS(). That creates a temporary table JUST FOR THIS QUERY.
-
-Now say I want to SELECT * FROM osteoarthritis as oa. That will just reproduce my query above. 
-Let me join that to labs. I want to keep all my patients, even those with no labs so I use a LEFT JOIN labs AS l.
-I join on patient_id from l and from oa. 
-And I'll put them in order by patient_id and lab result date.
-I don't need everything. I just want oa.patient_id, l.lab_name, l.lab_value, l.lab_date.
-
-```{r}
-oa_labs <- dbGetQuery(con, "
-  WITH osteoarthritis AS (
-    SELECT DISTINCT patient_id
-    FROM problems
-    WHERE problem_name = 'Osteoarthritis (disorder)'
-  )
-  SELECT oa.patient_id, l.lab_name, l.lab_value, l.lab_date
-  FROM osteoarthritis AS oa
-  LEFT JOIN labs AS l ON l.patient_id = oa.patient_id
-  ORDER BY oa.patient_id, l.lab_date
-")
-
-tibble(
-  rows              = nrow(oa_labs),
-  distinct_patients = n_distinct(oa_labs$patient_id)
 )
 ```

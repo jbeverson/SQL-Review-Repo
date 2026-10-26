@@ -62,19 +62,6 @@ CREATE TABLE labs (
   FOREIGN KEY (patient_id) REFERENCES patients (patient_id)
 ) ENGINE = InnoDB")
 
-dbExecute(con, "
-CREATE TABLE medications (
-  medication_id INT PRIMARY KEY,
-  slot INT,
-  patient_id VARCHAR(10) NOT NULL,
-  rxnorm_code VARCHAR(20) NOT NULL,
-  medication_name VARCHAR(150),
-  sig VARCHAR(150),
-  start_date DATE,
-  medication_status VARCHAR(20),
-  FOREIGN KEY (patient_id) REFERENCES patients (patient_id)
-) ENGINE = InnoDB")
-
 dbAppendTable(con, "patients",    patients)
 dbAppendTable(con, "medications", meds)
 dbAppendTable(con, "problems",    problems)
