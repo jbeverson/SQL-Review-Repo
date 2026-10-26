@@ -3,8 +3,8 @@
 extract_meds <- function(wide) {
     #Pull out meds
 
-    source("R/load-data.R")
-    wide<-load_data()
+    # source("R/load-data.R")
+    # wide<-load_data()
 
     meds_wide <- wide %>%
     select(starts_with("medication__") | starts_with("patient_id"))
