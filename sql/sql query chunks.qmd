@@ -49,7 +49,7 @@ labs_df <- dbGetQuery(con, "
   ")
 
 # Check number of rows returned and distinct labs. They should be different.
-tibble::tibble(
+tibble(
   rows              = nrow(labs_df),
   distinct_labs = n_distinct(labs_df$loinc_code)
 )
@@ -70,7 +70,7 @@ ggplot(labs_df, aes(x = row_count, y = reorder(loinc_code, row_count))) +
 geom_col()
 ```
 
-Now let's talk about joins. First let's say we wanted to ask how many labs each patient has: 0,1,2,3 labs. So we select patient_id, we count the number of labs. use COUNT(*) AS to create a new variable counting the number of labs. Let's first look at the number of rows and distinct patients we got back. 93. Remember we were looking at 100 before. Any guess what went wrong?
+Now let's talk about joins. First let's say we wanted to ask how many labs each patient has: 0,1,2,3 labs. So we select patient_id, we count the number of labs. use COUNT(*) AS to create a new variable counting the number of labs. Let's first look at the number of rows and distinct patients we got back. 93. Let's look at the count too in a simple table. Remember we were looking at 100 before. Any guess what went wrong?
 ```{r}
 pt_lab_count <- dbGetQuery(con, 
     "SELECT patient_id, COUNT(*) AS n_labs
@@ -80,7 +80,7 @@ pt_lab_count <- dbGetQuery(con,
     ")
 
 # Check number of rows returned and distinct labs. They should be different.
-tibble::tibble(
+tibble(
   rows              = nrow(pt_lab_count),
   distinct_patients = n_distinct(pt_lab_count$patient_id)
 )
@@ -91,9 +91,9 @@ table(pt_lab_count$n_labs)
 Let's join to bring in the patients with zero.
 
 So we select p.patient_id from patients as p. Let's check the number of rows and patients. Good back to 100.
-Now let's LEFT JOIN that to labs as l ON p.atieint_id = l.patient_id.
+Now let's LEFT JOIN that to labs as l ON p.patieint_id = l.patient_id.
 Now we have more rows but still 100 patients. Why?
-Okay let's get back to a count so we do COUNT(*) AS n_labs and GROUP BY p.patient_id. Now we are back to 100 rows and patients because we are counting. Now let's see if we fixed our counts.
+Okay let's get back to a count so we do COUNT(*) AS n_labs and GROUP BY p.patient_id. Now we are back to 100 rows and patients because we are counting patients that don't appear in labs. Now let's see if we fixed our counts.
 What's wrong here? Our COUNT is everything so it is including rows from patients that didn't match. To fix that, let's put something that's in labs only. And run again. Okay now this looks good.
 ```{r}
 pt_lab_count_improved <-dbGetQuery(con,
@@ -104,7 +104,7 @@ GROUP BY p.patient_id
 ORDER BY n_labs DESC, patient_id;
 ")
 
-tibble::tibble(
+tibble(
   rows              = nrow(pt_lab_count_improved),
   distinct_patients = n_distinct(pt_lab_count_improved$patient_id)
 )
@@ -112,7 +112,7 @@ tibble::tibble(
 table(pt_lab_count_improved$n_labs)
 ```
 
-Now let's look at the different types of joins.
+Now let's look at the different types of joins by joining patients to problems.
 Why does the number of rows increase to 303 on LEFT JOIN?
 Why do we lose 12 rows and 12 patients shifting to INNER JOIN.
 Why is INNER JOIN and RIGHT JOIN the same here?
@@ -121,10 +121,10 @@ Why is INNER JOIN and RIGHT JOIN the same here?
 pt_problems<-dbGetQuery(con,"
 SELECT p.patient_id, pr.problem_name
 FROM patients as p
-LEFT JOIN problems pr ON p.patient_id = pr.patient_id 
+RIGHT JOIN problems pr ON p.patient_id = pr.patient_id 
 ")
 
-tibble::tibble(
+tibble(
   rows              = nrow(pt_problems),
   distinct_patients = n_distinct(pt_problems$patient_id)
 )
@@ -140,7 +140,7 @@ LEFT JOIN problems pr ON p.patient_id = pr.patient_id
 WHERE pr.problem_name='Osteoarthritis (disorder)'
 ")
 
-tibble::tibble(
+tibble(
   rows              = nrow(pt_problems),
   distinct_patients = n_distinct(pt_problems$patient_id)
 )
@@ -155,7 +155,7 @@ LEFT JOIN problems pr ON p.patient_id = pr.patient_id
 WHERE pr.problem_name='Osteoarthritis (disorder)'
 ")
 
-tibble::tibble(
+tibble(
   rows              = nrow(pt_problems),
   distinct_patients = n_distinct(pt_problems$patient_id)
 )
@@ -183,7 +183,7 @@ oa_labs <- dbGetQuery(con, "
   ORDER BY oa.patient_id, l.lab_date
 ")
 
-tibble::tibble(
+tibble(
   rows              = nrow(oa_labs),
   distinct_patients = n_distinct(oa_labs$patient_id)
 )
